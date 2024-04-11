@@ -1,0 +1,65 @@
+#增加如下配置即可
+# 推流时会发布到多个子进程
+rtmp_auto_push on;
+rtmp_auto_push_reconnect 1s;
+rtmp {  
+    server {  
+        listen 1935;  #监听的端口号
+        chunk_size 8192; # 单一推流数据包的最大容量
+        
+        application hls {  # 创建rtmp应用hls
+            live on;  # 当路径匹配时，开始播放
+            #HLS协议进行m3u8实时直播.如果是http-flv不需要配置下面的
+            wait_key on;#保护TS切片
+            hls on;  #实时回访
+            hls_nested on;#每个流都自动创建一个文件夹
+            hls_path /tmp/hls; #媒体块ts的位置
+            hls_fragment 5s; #每个ts文件为5s的样子
+            hls_playlist_length 30s;  #保存m3u8列表长度时间，默认是30秒，可考虑三小时10800秒
+            hls_cleanup on;#是否删除列表中已经没有的媒体块TS文件，默认是开启
+            hls_continuous on;#连续模式
+       }  
+    } 
+}
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    server {
+        listen       88;
+        server_name  localhost;
+        error_log logs/rtmp/error.log;# http协议下的访问日志
+        access_log  logs/rtmp/access.log;
+        location /stat { # 开启这两个页面可以观察rtmp流的统计,不需要可去掉
+            rtmp_stat all;
+            rtmp_stat_stylesheet stat.xsl;
+        }
+    location /stat.xsl { # 查看状态的部分，不需要可去掉
+        root /opt/nginx-1.19.1-rtmp/nginx-http-flv-module/;
+    }
+    location /flv_live { # 拉http-flv的配置
+            flv_live on;
+            chunked_transfer_encoding on;
+            add_header 'Access-Control-Allow-Origin' '*';
+            add_header 'Access-Control-Allow-Credentials' 'true';
+    }
+    # 通过http访问的这个路径会被转发到/tmp/hls 寻找对应的m3u8文件和视频片段例如 111.m3u8，111-622.ts，前缀名字为视频上传流的stream_key
+    location /hls { # 拉m3u8的配置
+        types {
+              application/vnd.apple.mpegurl m3u8;
+              video/mp2t ts;
+            }
+        alias /tmp/hls;   
+        expires -1;
+        add_header 'Cache-Control' 'no-cache'; 
+    }
+    location / { # 首页
+        root html;
+        index index.html index.htm;
+    }
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+            root   html;
+    }
+  }
+}
