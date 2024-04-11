@@ -37,23 +37,28 @@ subjectAltName = IP:192.168.56.101
 openssl.cnf
 ：
 [req]
-default_bits        = 2048
 distinguished_name = req_distinguished_name
 req_extensions = v3_req
 [req_distinguished_name]
-countryName = CN
-stateOrProvinceName = Definesys
-localityName        = Definesys
-organizationName    = Definesys
+countryName = Country Name (2 letter code)
+countryName_default = US
+stateOrProvinceName = State or Province Name (full name)
+stateOrProvinceName_default = MN
+localityName = Locality Name (eg, city)
+localityName_default = Minneapolis
+organizationalUnitName  = Organizational Unit Name (eg, section)
+organizationalUnitName_default  = Domain Control Validated
+commonName = Internet Widgits Ltd
+commonName_max  = 64
+
 [ v3_req ]
 # Extensions to add to a certificate request
-authorityKeyIdentifier=keyid,issuer
 basicConstraints = CA:FALSE
-keyUsage = nonRepudiation, digitalSignature, keyEncipherment, dataEncipherment
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 subjectAltName = @alt_names
 
 [alt_names]
-DNS.1 = www.dbstring.club
+DNS.1 = www.test.club
 IP.1 = 192.168.137.100
 
 1/创建一个私钥
