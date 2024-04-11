@@ -1,3 +1,5 @@
+方法一：
+
 1/ 生成根证书私钥和根证书
 openssl req -x509 -nodes -days 36500 -newkey rsa:2048 -subj "/C=CN/ST=shanghai/L=pudongnewpower/O=yingshijufeng" -keyout CA-private.key -out CA-certificate.crt -reqexts v3_req -extensions v3_ca
 2/ 生成自签名证书私钥 -out private.key
@@ -26,8 +28,11 @@ keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
 subjectAltName = IP:192.168.56.101
 //////
 
-
 #适用于固定IP方法
+----------------------------------------------------------------------------------------
+
+方法二：
+适用于多IP多地址
 
 openssl.cnf
 ：
