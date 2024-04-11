@@ -1,0 +1,171 @@
+1/ 生成根证书私钥和根证书
+openssl req -x509 -nodes -days 36500 -newkey rsa:2048 -subj "/C=CN/ST=shanghai/L=pudongnewpower/O=yingshijufeng" -keyout CA-private.key -out CA-certificate.crt -reqexts v3_req -extensions v3_ca
+2/ 生成自签名证书私钥 -out private.key
+openssl genrsa -out private.key 2048
+3/ 根据自签名证书私钥生成自签名证书申请文件 -out private.csr
+openssl req -new -key private.key -subj "/C=CN/ST=shanghai/L=pudongnewpower/O=yingshijufeng/CN=www.dbstring.club" -sha256 -out private.csr
+4/
+openssl x509 -req -days 36500 -in private.csr -CA CA-certificate.crt -CAkey CA-private.key -CAcreateserial -sha256 -out private.crt -extfile private.ext -extensions SAN
+
+private.ext
+：
+[ req ]
+default_bits        = 1024
+distinguished_name  = req_distinguished_name
+req_extensions      = san
+extensions          = san
+[ req_distinguished_name ]
+countryName         = CN
+stateOrProvinceName = Definesys
+localityName        = Definesys
+organizationName    = Definesys
+[SAN]
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = IP:192.168.56.101
+//////
+
+
+#适用于固定IP方法
+
+openssl.cnf
+：
+[req]
+default_bits        = 2048
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+[req_distinguished_name]
+countryName = CN
+stateOrProvinceName = Definesys
+localityName        = Definesys
+organizationName    = Definesys
+[ v3_req ]
+# Extensions to add to a certificate request
+authorityKeyIdentifier=keyid,issuer
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = www.dbstring.club
+IP.1 = 192.168.137.100
+
+1/创建一个私钥
+
+#san_domain_com是你正式使用的服务器的全称地址
+#####openssl genrsa -out san_domain_com.key 2048
+# 如果是生成ca的使用，建议这样
+openssl genrsa -out ca.key 2048    《--
+
+#这里的san_domain_com，是你正式使用的服务器的全称地址，这不是必须的，也就是说，你可以随便取名字；但是按照这个格式去，会更清晰点
+
+--------------------------------
+
+2/创建CSR文件
+####openssl req -new -out san_domain_com.csr -key san_domain_com.key -config openssl.cnf
+# 注意这里指定了openssl.cnf，使用了上面我们创建的，因为默认是没有`san`。
+# 如果之前创建的是ca.key
+openssl req -new -out ca.csr -key c.key -confaig openssl.cnf    《----
+
+#执行后，系统会提示你要你输入组织信息，并询问你是否想要包含密码（你可以不需要）。接着你将会看到san_domain_com.csr被创建。
+
+------------------------------------------------
+
+3/检查我们是否创建好了，我们可以使用下面的命令来查看CSR包含的信息：
+
+openssl req -text -noout -in san_domain_com.csr
+# 如果是ca.csr
+openssl req -text -noout -in ca.csr
+
+你将会看到类似如下的信息：
+Certificate Request:
+Data:
+Version: 0 (0x0)
+Subject: C=US, ST=Texas, L=Fort Worth, O=My Company, OU=My Department, CN=server.example
+Subject Public Key Info: Public Key Algorithm: rsaEncryption RSA Public Key: (2048 bit)
+Modulus (2048 bit): blahblahblah
+Exponent: 65537 (0x10001)
+Attributes:
+Requested Extensions: X509v3
+Basic Constraints: CA:FALSE
+X509v3 Key Usage: Digital Signature, Non Repudiation, Key Encipherment
+X509v3 Subject Alternative Name: DNS:kb.example.com, DNS:helpdesk.example.com
+Signature Algorithm: sha1WithRSAEncryption
+blahblahblah
+
+好了现在我们有了一个新的CSR，接着我们需要对它进行签署。
+
+------------------------
+
+4/自签名并创建证书
+
+#####openssl x509 -req -days 3650 -in san_domain_com.csr -signkey san_domain_com.key
+ -out san_domain_com.crt-extensions v3_req -extfile openssl.cnf
+
+# 如果是ca.csr
+openssl x509 -req -days 36500 -in ca.csr -signkey ca.key
+ -out ca.crt-extensions v3_req -extfile openssl.cnf   《----
+
+
+#说明下：上面的证书 有效期是36500天（100年）。
+-------------------------------------------------
+
+下面是扩展：
+上面只是把ca证书给生成出来了，但是如何利用生成的ca来签名客户端的证书呢？
+
+1/创建客户端私钥
+
+openssl genrsa -out client.key 1024
+
+2/创建证书请求文件CSR
+
+openssl req -new -key client.key -out client.csr -config openssl.cnf -extensions v3_req
+
+3/利用ca.crt来签署client.csr
+
+openssl x509 -req -sha256 -extfile v3.ext -CA ca.crt -CAkey ca.key -CAcreateserial -in client.csr -out client.crt
+
+# 或者 把v3.ext 改为 openssl.cnf
+openssl x509 -req -sha256 -extfile openssl.cnf -CA ca.crt -CAkey ca.key -CAcreateserial -in client.csr -out client.crt
+
+
+v3.ext
+
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage=digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName=@alt_names
+
+[alt_names]
+DNS.1=www.test.com
+IP.1 = 192.168.1.1
+
+--------------------------------------------
+
+至此就生成出了，客户端的证书。
+
+同理服务器端证书是一样的。
+
+文件数量：
+ca: ca.key、ca.csr、ca.crt
+client: client.key、client.csr 、 client.crt
+
+
+
+实际执行语句
+
+# 生成ca
+openssl genrsa -out ca.key 1024
+openssl req -new -key ca.key -out ca.csr -config openssl.cnf -extensions v3_req
+openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt -extfile openssl.cnf -extensions v3_req
+# 生成client
+openssl genrsa -out client.key 1024
+openssl req -new -key client.key -out client.csr -config openssl.cnf -extensions v3_req
+openssl x509 -req -sha256 -extfile v3.ext -CA ca.crt -CAkey ca.key -CAcreateserial -in client.csr -out client.crt
+
+可以用来查看签发的证书的详细信息
+openssl x509 -text -noout -in client.crt
+
+可以用来查看该 CA 下所有已撤消证书的 详细信息
+openssl crl -in crl.pem -noout -text
