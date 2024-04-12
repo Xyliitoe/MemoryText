@@ -168,11 +168,11 @@ client: client.key、client.csr 、 client.crt
 # 生成ca
 openssl genrsa -out ca.key 1024
 openssl req -new -key ca.key -out ca.csr -config openssl.cnf -extensions v3_req
-openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt -extfile openssl.cnf -extensions v3_req
+openssl x509 -req  -days 36500 -in ca.csr -signkey ca.key -out ca.crt -extfile openssl.cnf -extensions v3_req
 # 生成client
 openssl genrsa -out client.key 1024
 openssl req -new -key client.key -out client.csr -config openssl.cnf -extensions v3_req
-openssl x509 -req -sha256 -extfile v3.ext -CA ca.crt -CAkey ca.key -CAcreateserial -in client.csr -out client.crt
+openssl x509 -req  -days 36500 -sha256 -extfile v3.ext -CA ca.crt -CAkey ca.key -CAcreateserial -in client.csr -out client.crt
 
 可以用来查看签发的证书的详细信息
 openssl x509 -text -noout -in client.crt
