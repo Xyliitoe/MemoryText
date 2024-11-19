@@ -157,9 +157,9 @@ extendedKeyUsage = serverAuth, clientAuth
 
 
 [alt_names]
-DNS.1 = dbstring.club
-DNS.2 = *.dbstring.club
-DNS.3 = www.dbstring.club
+DNS.1 =
+DNS.2 = 
+DNS.3 = 
 
 --------------------------------------------
 
